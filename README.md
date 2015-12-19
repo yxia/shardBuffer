@@ -1,2 +1,9 @@
-# vecbuf
-Multi-shard vector of buffer
+## Multi-shard Buffer
+
+* Goal
+
+* Interface
+
+* Design
+
+
