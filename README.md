@@ -1,10 +1,10 @@
-## Multi-shard Buffer
+# Multi-shard Buffer
 
-* Goal
+## Goal
 
 This project implements a high performance multiple sharded buffer, a useful data structure that can be used for building various high performance applications and data storages.
 
-The multiple sharded buffer is basically a parallel data structure mimic the interfaces of regular array or vector operations, as introduced in the following section, where a user can declare an array, dynamically resize or erease it (in this sense, it is more like the `std::vetor`), and append data to an element of the array. Wherever an `array` or a `std::vector` can be used, usually the multiple sharded buffer can be used either. 
+The multiple sharded buffer is basically a parallel data structure mimic the interfaces of regular array or vector operations, as introduced in the following section, where a user can declare an array, dynamically resize or erease it (in this sense, it is more like the `std::vector`), and append data to an element of the array. Wherever an `array` or a `std::vector` can be used, usually the multiple sharded buffer can be used either. 
 
 The mulitple sharded array brings features that a conventional array or `std::vector` may not always have. These features include:
 
@@ -14,7 +14,7 @@ The mulitple sharded array brings features that a conventional array or `std::ve
   -- Blob-compability: Each element in the multi-shard array can be a buffer of fixed size or variant size. When it is a variant size, it can be dynamically resize, resulting a highly flexible storage
   -- MVCC: each shard/element can be in multipel versions.
 
-* Interface
+## Interface
 
 The basic interfaces for the multiple sharded buffer include:
 
@@ -42,24 +42,24 @@ The basic interfaces for the multiple sharded buffer include:
     int  push_back(char*buf, size_t bufsz)
 ```
 
-  -- Assign a buffer to an index
+  - Assign a buffer to an index
 
 ```
     int set(size_t index, char* buf, size_t bufsz) 
 ```
 
-  -- Read a buffer out. The input is a buffer address provided by the user and its capacity; the actual size loaded overwrite the bufsz. 
+  - Read a buffer out. The input is a buffer address provided by the user and its capacity; the actual size loaded overwrite the bufsz. 
   
 ```
     int get(size_t index, char* buf, size_t *bufsz)
 ```    
 
-  -- Append a buffer to the end of an existing element
+  - Append a buffer to the end of an existing element
   
 ```
     int append(size_t index, char* buf, size_t bufsz)
 ```    
 
-* Design
+## Design
 
 
