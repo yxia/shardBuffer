@@ -1,4 +1,4 @@
-# Multi-shard Buffer
+# Multi-shard Buffer and Storage
 
 ## Goal
 
