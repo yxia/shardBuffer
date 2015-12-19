@@ -62,4 +62,4 @@ The basic interfaces for the multiple sharded buffer include:
 
 ## Design
 
-
+The multi-shard buffer storage mainly consists of three parts, *entry shards, chunck shards, and optional dynamic buffer entries*. 
