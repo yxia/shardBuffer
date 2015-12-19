@@ -72,4 +72,6 @@ The multi-shard buffer storage mainly consists of the *entry shards* and *chunck
     }
 ```
 
-The `idx` is an offset in the corresponding *entry shard* and the `sz` corresponds to the size in terms of numbers of bytes. The `buf` is a string (i.e. a buffer) initialized as an empty string.
+The `idx` is an offset in the corresponding *chunck shard* and the `sz` corresponds to the size in terms of numbers of bytes. The `buf` is a string (i.e. a buffer) initialized as an empty string. Note that a chunck shard is a buffer block of a certain size, say 16MB. 
+
+If we start with an empty multi-shard buffer, then an new element, say `t`, always has the initial values as `t.{idx=0,sz=0,buf=""}`. When user assign a buffer, say a string `s`, to the multi-shard array, `s` is copied to `t`. This is not much different from `std::vector<string>`, except its mulit-sharding. The really difference comes when the `serialize()` is called, either explictly or implicitly.  
