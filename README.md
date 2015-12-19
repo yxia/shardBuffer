@@ -62,4 +62,14 @@ The basic interfaces for the multiple sharded buffer include:
 
 ## Design
 
-The multi-shard buffer storage mainly consists of three parts, *entry shards, chunck shards, and optional dynamic buffer entries*. 
+The multi-shard buffer storage mainly consists of the *entry shards* and *chunck shards*. The *entry shards* consist of a set of vectors, each corresponding to a shard. The element of the vectors are of the following type:
+
+```cpp
+    typedef struct {
+      size_t idx;
+      size_t sz;
+      string buf;
+    }
+```
+
+The `idx` is an offset in the corresponding *entry shard* and the `sz` corresponds to the size in terms of numbers of bytes. The `buf` is a string (i.e. a buffer) initialized as an empty string.
