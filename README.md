@@ -68,9 +68,7 @@ The basic interfaces for the multiple sharded buffer include:
 
 ## Design
 
-The multi-shard buffer storage mainly consists of a set of *chunks* and optionally a set of *growing buffers*. Each *chunk* is a block of contiguous memory space, typically in a large size, featured by highly efficient loading, persisting, and duplication. Usually a chunk contains multiple elements from the multi-shard buffer, one followed another compactly. The resilient bu
-
-consist of a set of vectors, each corresponding to a shard. The element of the vectors are of the following type:
+The multi-shard buffer storage mainly consists of the *entries* and a set of *chunks*. The *entries* are a vector, where each element stores the offset and size of a multi-shard buffer element, as well as an optionally a set of *growing buffers*. The element of the entry vector is of the following type:
 
 ```cpp
     typedef struct {
@@ -79,8 +77,11 @@ consist of a set of vectors, each corresponding to a shard. The element of the v
       string buf;
     }
 ```
+The `idx` is an offset in the corresponding *chunck* and the `sz` corresponds to the size in terms of numbers of bytes. The `buf` is a string (i.e. a buffer) initialized as an empty `std::string`. Note that a chunck shard is a buffer block of a certain size, say 16MB. 
 
-The `idx` is an offset in the corresponding *chunck shard* and the `sz` corresponds to the size in terms of numbers of bytes. The `buf` is a string (i.e. a buffer) initialized as an empty string. Note that a chunck shard is a buffer block of a certain size, say 16MB. 
+Each *chunk* is a block of contiguous memory space, typically in a large size, featured by highly efficient loading, persisting, and duplication. Usually a chunk contains multiple elements from the multi-shard buffer, one followed another compactly. The growing buffers are reserved for modification of elements in chunks that exceed the space currently taken up in the chunk. 
 
-If we start with an empty multi-shard buffer, then an new element, say `t`, always has the initial values as `t.{idx=0,sz=0,buf=""}`. When user assign a buffer, say a string `s`, to the multi-shard array, `s` is copied to `t`. This is not much different from `std::vector<string>`, except its multi-sharding. The really difference comes when the `serialize()` is called, either explictly or implicitly. The serialization concatenates all data in the strings. 
+If we start with an empty multi-shard buffer, then an new element, say `t`, always has the initial values as `t.{idx=0,sz=0,buf=""}`. When user assign a buffer, say a string `s`, to the multi-shard array, `s` is copied to `t`. This is not much different from `std::vector<string>`, except its multi-sharding. The really difference comes when the `serialize()` is called, either explictly or implicitly, where the serialization concatenates all data in the strings to the chunks. While the chunk is populated, teh index and size in the *entries* are updated accordingly. Note the operation within a chunk is straightforward and it is independent for different chunks.
+
+After the serialization, the multi-shard can be efficiently persisted, as it becomes a set of arrays (the growing buffers are all empty and therefore skipped). After loading from disk, the format remains as the same as that after serialization. 
 
