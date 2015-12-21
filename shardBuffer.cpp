@@ -36,8 +36,11 @@ int shard_buffer_t::app(size_t idx, const char* buf, size_t bufsz) {
 
 int shard_buffer_t::del(size_t idx) {
   CHECK_OUT_RANGE(idx);
-  entries.erase(entries.begin()+idx);
-  growbuf.erase(growbuf.begin()+idx);
+  //entries.erase(entries.begin()+idx);
+  //growbuf.erase(growbuf.begin()+idx);
+  entries[idx].first = 0;
+  entries[idx].second = 0;
+  growbuf[idx].clear();
   return _SHARDBUF_SUCCEED;
 }
 
@@ -64,7 +67,27 @@ int shard_buffer_t::push_back(const char* buf, size_t bufsz) {
 }
 
 int shard_buffer_t::serialize() {
-  
+  size_t num_new_chunks = (entries.size() >> chunk_log) + 1;
+  vector<string> new_chunks(num_new_chunks);
+  size_t new_chunk_idx = 0;
+  for (size_t i=0; i<entries.size(); i++) {
+    size_t chunk_index  = i >> chunk_log;
+    size_t chunk_offset = entries[i].first;
+    size_t chunk_datasz = entries[i].second;
+   
+    if (chunk_index <= new_chunks.size())
+      new_chunks.resize(chunk_index+1);
+    
+    size_t new_chunk_offset = new_chunks[chunk_index].size();
+    size_t new_chunk_datasz = chunk_datasz + growbuf[i].size();
+    entries[i] = make_pair(new_chunk_offset, new_chunk_datasz);
+
+    new_chunks[chunk_index].append(&chunks[chunk_index][chunk_offset], chunk_datasz);
+    new_chunks[chunk_index].append(growbuf[i]);
+    
+    growbuf[chunk_index].clear();
+  }
+  chunks = move(new_chunks);
 }
 
 #ifdef DEBUG
