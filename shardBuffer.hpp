@@ -11,7 +11,8 @@
 
 
 #define CHECK_OUT_RANGE(n) {if((n) >= entries.size()) return _SHARDBUF_OUT_RANGE;}
-
+#define GET_CHUNK_INDEX(loc,m) {(loc >> m)}
+#define GET_CHUNK_OFFSET(loc,m) {(loc & ((1 << (m+1)) - 1))}
 
 using namespace std;
 

@@ -1,43 +1,43 @@
 #include "shardBuffer.hpp"
 
-int shard_buffer_t::set(size_t idx, const char* buf, size_t bufsz) {
+int shard_buffer_t::set(size_t idx, const char* userbuf, size_t userbuf_sz) {
   CHECK_OUT_RANGE(idx);
-  growbuf[idx] = string(buf, bufsz);
+  entries[idx] = make_pair(0,0);
+  growbuf[idx] = string(userbuf, userbuf_sz);
   return _SHARDBUF_SUCCEED;
 }
 
-int shard_buffer_t::get(size_t idx, char* buf, size_t &bufsz) {
+int shard_buffer_t::get(size_t idx, char* userbuf, size_t &userbuf_sz) {
   CHECK_OUT_RANGE(idx);
-  size_t chunk_offset = entries[idx].first;
-  size_t chunk_datasz = entries[idx].second;
-  size_t valsz = chunk_datasz + growbuf[idx].size();
-  if (valsz > bufsz)
+  size_t chunk_loc = entries[idx].first;
+  size_t chunk_sz  = entries[idx].second;
+  size_t data_sz   = chunk_sz + growbuf[idx].size();
+  if (data_sz > userbuf_sz)
     return _SHARDBUF_OVERFLOW;
 
-  bufsz = 0;
-  if (chunk_datasz > 0) {
-    size_t chunk_idx = idx >> chunk_log;
-    memcpy(buf, &(chunks[chunk_idx][chunk_offset]), chunk_datasz);
-    bufsz += chunk_datasz;
+  userbuf_sz = 0;
+  if (chunk_sz > 0) {
+    size_t chunk_idx    = GET_CHUNK_INDEX(chunk_loc, chunk_log); 
+    size_t chunk_offset = GET_CHUNK_OFFSET(chunk_loc, chunk_log);
+    memcpy(userbuf, &(chunks[chunk_idx][chunk_offset]), chunk_sz);
+    userbuf_sz += chunk_sz;
   }
 
   if (growbuf[idx].size() > 0) {
-    memcpy(buf+bufsz, growbuf[idx].data(), growbuf[idx].size());
-    bufsz += growbuf[idx].size();
+    memcpy(userbuf+userbuf_sz, growbuf[idx].data(), growbuf[idx].size());
+    userbuf_sz += growbuf[idx].size();
   }
   return _SHARDBUF_SUCCEED; 
 }
 
-int shard_buffer_t::app(size_t idx, const char* buf, size_t bufsz) {
+int shard_buffer_t::app(size_t idx, const char* userbuf, size_t userbuf_sz) {
   CHECK_OUT_RANGE(idx);
-  growbuf[idx].append(buf, bufsz);
+  growbuf[idx].append(userbuf, userbuf_sz);
   return _SHARDBUF_SUCCEED;
 }
 
 int shard_buffer_t::del(size_t idx) {
   CHECK_OUT_RANGE(idx);
-  //entries.erase(entries.begin()+idx);
-  //growbuf.erase(growbuf.begin()+idx);
   entries[idx].first = 0;
   entries[idx].second = 0;
   growbuf[idx].clear();
@@ -46,15 +46,21 @@ int shard_buffer_t::del(size_t idx) {
 
 int shard_buffer_t::del(size_t idx, size_t offset, size_t sz) {
   CHECK_OUT_RANGE(idx);
-  size_t chunk_offset = entries[idx].first;
-  size_t chunk_datasz = entries[idx].second;
-  if (offset+sz <= chunk_datasz) { // delete within the chunk
-    if (chunk_offset >= chunks.size()) return _SHARDBUF_OUT_RANGE;
-    chunks[chunk_offset].erase(offset, sz);
-  } else if (offset <= chunk_datasz) {
-    return _SHARDBUF_OUT_RANGE;
-  } else { // delete in growbuf
-    offset -= chunk_datasz;
+  size_t chunk_loc = entries[idx].first;
+  size_t chunk_sz  = entries[idx].second;
+
+  size_t chunk_idx    = GET_CHUNK_INDEX(chunk_loc, chunk_log); 
+  size_t chunk_offset = GET_CHUNK_OFFSET(chunk_loc, chunk_log);
+
+  if (offset+sz <= chunk_sz) { // delete within the chunk
+    chunks[chunk_idx].erase(chunk_offset+offset, sz);
+    entries[idx] = make_pair(chunk_loc, chunk_sz-sz);
+  } else if (offset <= chunk_sz) { // delete in both
+    size_t delta = offset+sz - chunk_sz;
+    chunks[chunk_idx].erase(chunk_offset+offset, sz-delta);
+    growbuf[idx].erase(0, delta);
+  } else if (offset+sz-chunk_sz < growbuf[idx].size()) { // delete in growbuf only
+    offset -= chunk_sz;
     growbuf[idx].erase(offset, sz);
   }
   return _SHARDBUF_SUCCEED;
