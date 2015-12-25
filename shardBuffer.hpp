@@ -32,6 +32,7 @@ public:
   int del(size_t idx, size_t offset, size_t sz);
   int push_back(const char* buf, size_t bufsz);
   int serialize();
+  void dump();
 };
 
 
