@@ -73,41 +73,56 @@ int shard_buffer_t::push_back(const char* buf, size_t bufsz) {
 }
 
 int shard_buffer_t::serialize() {
-  size_t num_new_chunks = 0;
-  for (auto it=entries.begin(); it!=entries.end(); it++) 
-    num_new_chunks = (num_new_chunks>it->first)? num_new_chunks: it->first;
-  num_new_chunks >>= chunk_log;
+  vector<string> new_chunks(1);
+  new_chunks.reserve(chunks.size()*2+1);
 
-  vector<string> new_chunks(num_new_chunks);
+  size_t tot_data_sz = 0;
+  size_t new_chunk_idx = 0; 
   for (size_t i=0; i<entries.size(); i++) {
-    size_t chunk_loc = entries[i].first;
+    size_t chunk_loc = entries[i].first;                                                                          
     size_t chunk_sz  = entries[i].second;
-   
-    size_t chunk_idx    = GET_CHUNK_INDEX(chunk_loc, chunk_log); 
-    size_t chunk_offset = GET_CHUNK_OFFSET(chunk_loc, chunk_log);
+    size_t data_sz = 0;
+    if (chunk_sz > 0) {
+      size_t chunk_idx    = GET_CHUNK_INDEX(chunk_loc, chunk_log);       
+      size_t chunk_offset = GET_CHUNK_OFFSET(chunk_loc, chunk_log);
+      new_chunks[new_chunk_idx].append(chunks[chunk_idx][chunk_offset], chunk_sz);
+      data_sz += chunk_sz;
+    }
+    if (growbuf[i].size() > 0) {
+      new_chunks[new_chunk_idx].append(growbuf[i]);
+      data_sz += growbuf[i].size();
+      growbuf[i].clear();
+    }
 
-    size_t new_chunk_offset = new_chunks[chunk_idx].size();
-    size_t new_chunk_datasz = chunk_sz + growbuf[i].size();
-    entries[i] = make_pair(new_chunk_offset, new_chunk_datasz);
-
-    new_chunks[chunk_idx].append(&chunks[chunk_idx][chunk_offset], chunk_sz);
-    new_chunks[chunk_idx].append(growbuf[i]);    
+    entries[i] = make_pair(tot_data_sz, data_sz);
+    tot_data_sz += data_sz;
+    
+    size_t t = GET_CHUNK_INDEX(tot_data_sz, chunk_log);
+    new_chunk_idx = (t>new_chunk_idx)? t: new_chunk_idx;
+    if (new_chunk_idx >= new_chunks.size())
+      new_chunks.resize(new_chunk_idx+1);
   }
+
   chunks = move(new_chunks);
-  growbuf.clear();
 }
 
+
+
 void shard_buffer_t::dump() {
+  cout << "---- entries ----\n";
   for (size_t i=0; i<entries.size(); i++) {
     cout << "entry (" << entries[i].first <<"," 
 	 << entries[i].second << "): [" 
 	 << growbuf[i] << "]\n";
   }
   
+  cout << "---- chunks ----\n";
   for (size_t i=0; i<chunks.size(); i++) {
     cout << "chunk-" << i << ": ["
 	 << chunks[i] << "]\n";
   }
+
+  cout <<"\n";
 }
 
 
@@ -129,7 +144,7 @@ int main() {
   */
 
 
-  ifstream f("sample.txt");
+  ifstream f("sample.txt", ios_base::in);
   if (!f.is_open()) {
     cerr << "file can not open" << endl;
     return -1;
@@ -139,10 +154,13 @@ int main() {
     string line;
     getline(f, line);
 
-    buf.push_back(str.c_str(), str.size());
+    buf.push_back(line.c_str(), line.size());
   }
   f.close();
 
+  buf.dump();
+
+  buf.serialize();
   buf.dump();
 
 

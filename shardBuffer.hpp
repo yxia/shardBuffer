@@ -4,6 +4,7 @@
 #include <string>
 #include <algorithm>
 #include <utility>
+#include <fstream>
 
 #define _SHARDBUF_SUCCEED   0
 #define _SHARDBUF_OUT_RANGE 2
@@ -17,7 +18,8 @@
 using namespace std;
 
 class shard_buffer_t {
-  unsigned int chunk_log = 20;  // chunk_size = 2^20 = 1M
+  // unsigned int chunk_log = 20;  // chunk_size = 2^20 = 1M
+  unsigned int chunk_log = 8;
   vector<string> chunks;
   vector<string> growbuf;
   vector<pair<size_t, size_t> > entries;
