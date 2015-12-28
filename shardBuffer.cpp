@@ -130,20 +130,6 @@ void shard_buffer_t::dump() {
 int main() {
   shard_buffer_t buf;
 
-  /*
-  string str  = "hello ";
-  string str2 = "world!";
-  buf.push_back(str.c_str(), str.size());
-  // buf.push_back(str2.c_str(), str2.size());
-  buf.app(0, str2.c_str(), str2.size());
-
-  char mybuf[1024];
-  size_t sz = 1024;
-  if (!buf.get(0, mybuf, sz))
-    cout << "--> " << string(mybuf, sz) << endl;
-  */
-
-
   ifstream f("sample.txt", ios_base::in);
   if (!f.is_open()) {
     cerr << "file can not open" << endl;
