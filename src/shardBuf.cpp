@@ -150,7 +150,31 @@ int shard_buffer_t::serialize() {
   chunks = move(new_chunks);
 }
 
-void shard_buffer_t::dump() {
+int shard_buffer_t::save(const string& fn) {
+  ofstream f(fn.c_str(), ios_base::binary);
+  if (!f.is_open(fn)) {
+    return _SHARDBUF_FAIL;
+  }
+
+  size_t n = entries.size();
+  f.write(reinterpret_case<char*>(&n), sizeof(size_t));
+  f.write(reinterpret_cast<char*>(entries.data()), entries.size()*sizeof(entry_t));
+
+  size_t m=chunks.size();
+  f.write(reinterpret_case<char*>(&m), sizeof(size_t));
+  for (size_t i=0; i<m; i++) {
+    size_t k = chunks[i].size();
+    f.write(reinterpret_case<char*>(&k), sizeof(size_t));
+    f.write(reinterpret_case<char*>(chunks[i].data()),k);
+  }
+  return _SHARDBUF_SUCCESS;
+}
+
+int shard_buffer_t::load(const string& fn) {
+
+} 
+
+void shard_buffer_t::disp() {
   cout << "---- entries ----\n";
   for (size_t i=0; i<entries.size(); i++) {
     cout << "entry (" << entries[i].chunk_id <<"," 
@@ -188,10 +212,10 @@ int main() {
   }
   f.close();
 
-  buf.dump();
+  buf.disp();
 
   buf.serialize();
-  buf.dump();
+  buf.disp();
 
   cout << "log of chunk_size: " << buf.get_chunk_size() << endl;
 

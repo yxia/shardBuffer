@@ -9,6 +9,7 @@
 #define WR_MODE -1
 #define RD_MODE 1
 #define _SHARDBUF_SUCCEED   0
+#define _SHARDBUF_FAIL      1
 #define _SHARDBUF_OUT_RANGE 2
 #define _SHARDBUF_OVERFLOW  3
 
@@ -56,6 +57,7 @@ public:
   
   int push_back(const char* buf, size_t bufsz);
   int serialize();
+  void disp();
   void dump();
 
   unsigned int get_chunk_size() { return chunk_log; }
