@@ -152,26 +152,63 @@ int shard_buffer_t::serialize() {
 
 int shard_buffer_t::save(const string& fn) {
   ofstream f(fn.c_str(), ios_base::binary);
-  if (!f.is_open(fn)) {
+  if (!f.is_open()) {
     return _SHARDBUF_FAIL;
   }
 
+  f.write(reinterpret_cast<char*>(&chunk_log), sizeof(unsigned int));
+
   size_t n = entries.size();
-  f.write(reinterpret_case<char*>(&n), sizeof(size_t));
+  f.write(reinterpret_cast<char*>(&n), sizeof(size_t));
   f.write(reinterpret_cast<char*>(entries.data()), entries.size()*sizeof(entry_t));
 
   size_t m=chunks.size();
-  f.write(reinterpret_case<char*>(&m), sizeof(size_t));
+  f.write(reinterpret_cast<char*>(&m), sizeof(size_t));
   for (size_t i=0; i<m; i++) {
     size_t k = chunks[i].size();
-    f.write(reinterpret_case<char*>(&k), sizeof(size_t));
-    f.write(reinterpret_case<char*>(chunks[i].data()),k);
+    f.write(reinterpret_cast<char*>(&k), sizeof(size_t));
+    f.write(reinterpret_cast<char*>(&chunks[i]),k);
   }
-  return _SHARDBUF_SUCCESS;
+  return _SHARDBUF_SUCCEED;
 }
 
 int shard_buffer_t::load(const string& fn) {
+  ifstream f(fn.c_str(), ios_base::binary);
+  if (!f.is_open()) {
+    return _SHARDBUF_FAIL;
+  }
 
+  chunk_log = 0;
+  f.read(reinterpret_cast<char*>(&chunk_log), sizeof(unsigned int));
+
+  entries.clear();
+  size_t n = 0;
+  f.read(reinterpret_cast<char*>(&n), sizeof(size_t));
+  if (n>0) {
+    entries.resize(n);
+    f.read(reinterpret_cast<char*>(entries.data()), n*sizeof(entry_t));
+  }
+
+  chunks.clear();
+  size_t m = 0;
+  f.read(reinterpret_cast<char*>(&m), sizeof(size_t));
+  if (m>0) {
+    chunks.resize(m);
+    for (size_t i=0; i<m; i++) {
+      size_t k=0;
+      f.read(reinterpret_cast<char*>(&k), sizeof(size_t));
+      if (k>0) {
+	chunks[i].resize(k);
+	f.read(reinterpret_cast<char*>(&chunks[i]), k);
+      }
+    }
+  }
+
+  dyn_buf.clear();
+  dyn_buf.resize(n);
+
+  
+  return _SHARDBUF_SUCCEED;
 } 
 
 void shard_buffer_t::disp() {
@@ -212,12 +249,18 @@ int main() {
   }
   f.close();
 
+  cout << "------ load data from text file ------\n";
   buf.disp();
 
   buf.serialize();
-  buf.disp();
 
-  cout << "log of chunk_size: " << buf.get_chunk_size() << endl;
+  cout << "------ serializing into shards ------\n";
+  buf.disp();
+  cout << "log of chunk_size: " << buf.get_chunk_size() << "\n\n";
+
+  cout << "------ load buffers from disk ------\n";
+  buf.disp();
+  cout << "log of chunk_size: " << buf.get_chunk_size() << "\n\n";
 
   return 0;
 }

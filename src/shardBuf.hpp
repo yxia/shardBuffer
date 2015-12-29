@@ -58,7 +58,8 @@ public:
   int push_back(const char* buf, size_t bufsz);
   int serialize();
   void disp();
-  void dump();
+  int save(const string &f);
+  int load(const string &f);
 
   unsigned int get_chunk_size() { return chunk_log; }
 
